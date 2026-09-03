@@ -452,44 +452,42 @@ function getReverseCandidates(text) {
 
         for (let end = position + 1; end <= text.length; end++) {
             const part = text.slice(position, end);
-
-            const reverseParts = new Set([part]);
+            const reverseParts = new Set();
 
             for (const rule of soundChanges) {
-                if (rule.from === rule.to) {
-                    continue;
-                }
-
-if (rule.to === "") {
-    if (rule.position === "initial") {
-        if (position === 0 && /^[aeiou]/.test(part)) {
-            reverseParts.add(rule.from + part);
-        }
-    }
-
-    if (rule.position === "final") {
-        if (end === text.length) {
-            reverseParts.add(part + rule.from);
-        }
-    }
-
-    continue;
-}
                 if (rule.to === "") {
+                    if (rule.position === "initial") {
+                        if (position === 0 && /^[aeiou]/.test(part)) {
+                            reverseParts.add(rule.from + part);
+                        }
+                    }
+
+                    if (rule.position === "final") {
+                        if (end === text.length) {
+                            reverseParts.add(part + rule.from);
+                        }
+                    }
+
                     continue;
                 }
 
-if (rule.to === part) {
-    if (rule.position === "final" && end !== text.length) {
-        continue;
-    }
+                if (rule.to !== part) {
+                    continue;
+                }
 
-    if (rule.position === "initial" && position !== 0) {
-        continue;
-    }
+                if (rule.position === "initial" && position !== 0) {
+                    continue;
+                }
 
-    reverseParts.add(rule.from);
-}
+                if (rule.position === "final" && end !== text.length) {
+                    continue;
+                }
+
+                reverseParts.add(rule.from);
+            }
+
+            if (reverseParts.size === 0) {
+                continue;
             }
 
             const restCandidates = solve(end);
