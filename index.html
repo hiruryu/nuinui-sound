@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>縫語 中古音候補生成</title>
+
+<style>
+    body {
+        font-family: sans-serif;
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 0 20px;
+        line-height: 1.6;
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    textarea {
+        width: 100%;
+        box-sizing: border-box;
+        font-size: 20px;
+        padding: 10px;
+        resize: vertical;
+    }
+
+    button {
+        margin-top: 10px;
+        padding: 8px 20px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    #result {
+        margin-top: 20px;
+        padding: 15px;
+        border: 1px solid #ccc;
+        min-height: 50px;
+        font-size: 20px;
+        word-break: break-word;
+    }
+
+    .candidate {
+        display: inline-block;
+        margin: 4px;
+        padding: 4px 8px;
+        background: #f0f0f0;
+        border-radius: 4px;
+    }
+</style>
+</head>
+
+<body>
+<h1>縫語 中古音候補生成</h1>
+<p>現代音を入力してください。</p>
+<textarea id="modernInput" rows="2" placeholder="例：wan"></textarea>
+<button onclick="generateCandidates()">候補を生成</button>
+<h2>結果</h2>
+<div id="result"></div>
+  
+<script>
+const soundChanges = [
+    { from: "a",  to: "a" },
+    { from: "e", to: "ye" },
+    { from: "i",  to: "i" },
+    { from: "o", to: "wo" },
+    { from: "u",  to: "o" },
+    { from: "ä", to: "ya" },
+    { from: "â",  to: "wa" },
+    { from: "ja",  to: "ye" },
+    { from: "je", to: "i" },
+    { from: "jo", to: "ü" },
+    { from: "ju",  to: "ü" },
+    { from: "jä", to: "ya" },
+    { from: "jâ",  to: "üa" },
+    { from: "wa",  to: "wo" },
+    { from: "we", to: "üe" },
+    { from: "wi",  to: "wei" },
+    { from: "wo", to: "wa" },
+    { from: "wä", to: "üa" },
+    { from: "wâ",  to: "wo" },
+    { from: "aj",  to: "ei" },
+    { from: "ej", to: "i" },
+    { from: "ij",  to: "i" },
+    { from: "oj", to: "wei" },
+    { from: "uj",  to: "oi" },
+    { from: "äj", to: "ei" },
+    { from: "âj",  to: "wai" },
+    { from: "aw",  to: "ao" },
+    { from: "ew", to: "yao" },
+    { from: "iw", to: "ü" },
+    { from: "ow", to: "u" },
+    { from: "uw",  to: "ou" },
+    { from: "äw", to: "yao" },
+    { from: "âw",  to: "ao" },
+
+    { from: "ap",  to: "a" },
+    { from: "ep", to: "ya" },
+    { from: "ip",  to: "i" },
+    { from: "op", to: "wo" },
+    { from: "up", to: "o" },
+    { from: "äp", to: "ya" },
+    { from: "âp",  to: "wo" },
+
+    { from: "at",  to: "a" },
+    { from: "et", to: "ya" },
+    { from: "it",  to: "i" },
+    { from: "ot", to: "wo" },
+    { from: "ut", to: "ü" },
+    { from: "ät", to: "ya" },
+    { from: "ât",  to: "wa" },
+    { from: "ak",  to: "ao" },
+    { from: "ek", to: "yao" },
+    { from: "ik",  to: "ü" },
+    { from: "ok", to: "wo" },
+    { from: "uk", to: "ü" },
+    { from: "äk", to: "yao" },
+    { from: "âk",  to: "wa" },
+
+    { from: "al",  to: "ai" },
+    { from: "el", to: "i" },
+    { from: "il",  to: "ei" },
+    { from: "ol", to: "oi" },
+    { from: "ul", to: "oi" },
+    { from: "äl¹", to: "ya" },
+    { from: "äl²", to: "ei" },
+    { from: "âl",  to: "wai" },
+
+    { from: "am",  to: "an" },
+    { from: "em", to: "yan" },
+    { from: "im",  to: "in" },
+    { from: "om", to: "wong" },
+    { from: "um", to: "ong" },
+    { from: "äm", to: "yan" },
+    { from: "âm",  to: "wang" },
+    { from: "ēm", to: "in" },
+    { from: "wem", to: "üen" },
+    { from: "wäm", to: "üen" },
+    { from: "jâm", to: "üang" },
+
+    { from: "an",  to: "an" },
+    { from: "en", to: "yan" },
+    { from: "in",  to: "in" },
+    { from: "on", to: "won" },
+    { from: "un", to: "ün" },
+    { from: "än", to: "yan" },
+    { from: "ân", to: "wan" },
+    { from: "ēn", to: "in" },
+    { from: "wen", to: "üan" },
+    { from: "wän", to: "üan" },
+    { from: "jân", to: "üen" },
+
+    { from: "ang", to: "ang" },
+    { from: "eng", to: "ei" },
+    { from: "ing", to: "ing" },
+    { from: "ong¹", to: "ong" },
+    { from: "ong²", to: "eng" },
+    { from: "äng", to: "yang" },
+    { from: "âng", to: "wang" },
+    { from: "īng", to: "ei" },
+    { from: "wäng", to: "üang" },
+
+    { from: "p", to: "b" },
+    { from: "b", to: "b" },
+    { from: "ph", to: "p" },
+    { from: "t", to: "d" },
+    { from: "d", to: "d" },
+    { from: "th", to: "t" },
+    { from: "k", to: "g" },
+    { from: "g", to: "g" },
+    { from: "kh", to: "k" },
+    { from: "s", to: "s" },
+    { from: "z", to: "s" },
+    { from: "h", to: "", position: "initial"},
+    { from: "ts", to: "z" },
+    { from: "dz", to: "z" },
+    { from: "tsh", to: "c" },
+    { from: "m", to: "m" },
+    { from: "n", to: "n" },
+    { from: "ŋ", to: "n" },
+    { from: "l", to: "l" },
+    { from: "r", to: "y" },
+    { from: "y", to: "y" },
+    { from: "w", to: "w" },
+    { from: "pj", to: "bi" },
+    { from: "bj", to: "bi" },
+    { from: "phj", to: "pi" },
+    { from: "tj", to: "di" },
+    { from: "dj", to: "di" },
+    { from: "thj", to: "ti" },
+    { from: "kj", to: "zi" },
+    { from: "gj", to: "zi" },
+    { from: "khj", to: "ci" },
+    { from: "sj", to: "si" },
+    { from: "zj", to: "si" },
+    { from: "hj", to: "si" },
+    { from: "tsj", to: "zi" },
+    { from: "dzj", to: "zi" },
+    { from: "tshj", to: "ci" },
+    { from: "mj", to: "mi" },
+    { from: "nj", to: "ni" },
+    { from: "ŋj", to: "nh" },
+    { from: "lj", to: "li" },
+    { from: "rj", to: "y" },
+    { from: "pw", to: "bu" },
+    { from: "bw", to: "bu" },
+    { from: "phw", to: "pu" },
+    { from: "tw", to: "du" },
+    { from: "dw", to: "du" },
+    { from: "thw", to: "tu" },
+    { from: "kw", to: "gu" },
+    { from: "gw", to: "gu" },
+    { from: "khw", to: "ku" },
+    { from: "sw", to: "su" },
+    { from: "zw", to: "su" },
+    { from: "hw", to: "f" },
+    { from: "tsw", to: "zu" },
+    { from: "dzw", to: "zu" },
+    { from: "tshw", to: "cu" },
+    { from: "mw", to: "w" },
+    { from: "nw", to: "nu" },
+    { from: "ŋw", to: "w" },
+    { from: "lw", to: "lu" },
+    { from: "ru", to: "w" },
+
+    { from: "pr", to: "bi" },
+    { from: "br", to: "bi" },
+    { from: "phr", to: "pi" },
+    { from: "tr", to: "zh" },
+    { from: "dr", to: "zh" },
+    { from: "thr", to: "ch" },
+    { from: "kr", to: "zi" },
+    { from: "gr", to: "zi" },
+    { from: "khr", to: "ci" },
+    { from: "sr", to: "sh" },
+    { from: "zr", to: "sh" },
+    { from: "hr", to: "si" },
+    { from: "tsr", to: "zh" },
+    { from: "dzr", to: "zh" },
+    { from: "tshr", to: "ch" },
+    { from: "mr", to: "mi" },
+    { from: "nr", to: "nh" },
+    { from: "ngr", to: "nh" },
+    { from: "prw", to: "bü" },
+    { from: "brw", to: "bü" },
+    { from: "phw", to: "pü" },
+    { from: "trw", to: "zhü" },
+    { from: "drw", to: "zhü" },
+    { from: "thrw", to: "chü" },
+    { from: "krw", to: "zhü" },
+    { from: "grw", to: "zhü" },
+    { from: "khrw", to: "chü" },
+    { from: "srw", to: "shü" },
+    { from: "zrw", to: "shü" },
+    { from: "hrw", to: "sü" },
+    { from: "tsrw", to: "zhü" },
+    { from: "dzrw", to: "zhü" },
+    { from: "tshrw", to: "chü" },
+    { from: "mrw", to: "ü" },
+    { from: "nrw", to: "nü" },
+    { from: "ŋrw", to: "nhü" }
+];
+
+function applyReverseChanges(word) {
+    const results = new Set();
+    const queue = [
+        {
+            word: word,
+            usedRules: new Set()
+        }
+    ];
+    while (queue.length > 0) {
+        const current = queue.shift();
+        const candidate = current.word;
+        const usedRules = current.usedRules;
+        results.add(candidate);
+
+        for (let ruleIndex = 0;
+             ruleIndex < soundChanges.length;
+             ruleIndex++) {
+            const rule = soundChanges[ruleIndex];
+
+            if (rule.from === rule.to) {
+                continue;
+            }
+               
+            if (usedRules.has(ruleIndex)) {
+                continue;
+            }
+
+            if (rule.to === "") {
+                if (rule.position === "initial") {
+                    const reversed =
+                        rule.from + candidate;
+                    if (!results.has(reversed)) {
+                        const newUsedRules =
+                            new Set(usedRules);
+                        newUsedRules.add(ruleIndex);
+                        queue.push({
+                            word: reversed,
+                            usedRules: newUsedRules
+                        });
+                    }
+                }
+                continue;
+            }
+
+            let index =
+                candidate.indexOf(rule.to);
+            while (index !== -1) {
+                const reversed =
+                    candidate.slice(0, index) +
+                    rule.from +
+                    candidate.slice(
+                        index + rule.to.length
+                    );
+                if (!results.has(reversed)) {
+                    const newUsedRules =
+                        new Set(usedRules);
+                    newUsedRules.add(ruleIndex);
+                    queue.push({
+                        word: reversed,
+                        usedRules: newUsedRules
+                    });
+                }
+                index =
+                    candidate.indexOf(
+                        rule.to,
+                        index + rule.to.length
+                    );
+            }
+        }
+    }
+    return [...results];
+}
+
+function generateCandidates() {
+    const input =
+        document
+            .getElementById("modernInput")
+            .value
+            .trim();
+    const result =
+        document.getElementById("result");
+    if (!input) {
+        result.textContent =
+            "現代音を入力してください";
+        return;
+    }
+    const candidates =
+        applyReverseChanges(input);
+
+    const filtered =
+        candidates.filter(
+            candidate => candidate !== input
+        );
+
+    const unique =
+        [...new Set(filtered)];
+
+    if (unique.length === 0) {
+        result.textContent =
+            "候補が見つかりませんでした";
+        return;
+    }
+    result.innerHTML =
+        unique
+            .map(
+                candidate =>
+                    `<span class="candidate">/${candidate}/</span>`
+            )
+            .join(" ");
+}
+</script>
+</body>
+</html>
