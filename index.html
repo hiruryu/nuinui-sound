@@ -262,8 +262,11 @@ const soundChanges = [
     { from: "g", to: "g", position: "initial" },
     { from: "kh", to: "k" },
     { from: "s", to: "s" },
+    { from: "s", to: "", position: "final" },
     { from: "z", to: "s" },
+    { from: "z", to: "", position: "final" },
     { from: "h", to: "", position: "initial"},
+    { from: "h", to: "", position: "final" },
     { from: "ts", to: "z" },
     { from: "dz", to: "z" },
     { from: "tsh", to: "c" },
@@ -395,13 +398,21 @@ function getReverseCandidates(text) {
                     continue;
                 }
 
-if (rule.to === "" && rule.position === "initial") {
-    if (position === 0 && /^[aeiou]/.test(part)) {
-        reverseParts.add(rule.from + part);
+if (rule.to === "") {
+    if (rule.position === "initial") {
+        if (position === 0 && /^[aeiou]/.test(part)) {
+            reverseParts.add(rule.from + part);
+        }
     }
+
+    if (rule.position === "final") {
+        if (end === text.length) {
+            reverseParts.add(part + rule.from);
+        }
+    }
+
     continue;
 }
-
                 if (rule.to === "") {
                     continue;
                 }
