@@ -263,115 +263,89 @@ const soundChanges = [
     { from: "ŋrw", to: "nhü" }
 ];
 
-function applyReverseChanges(word) {
-    const results = new Set();
-    const queue = [
-        {
-            word: word,
-            usedRules: new Set()
+function getReverseCandidates(text) {
+    const memo = new Map();
+
+    function solve(position) {
+        if (position === text.length) {
+            return [""];
         }
-    ];
-    while (queue.length > 0) {
-        const current = queue.shift();
-        const candidate = current.word;
-        const usedRules = current.usedRules;
-        results.add(candidate);
 
-        for (let ruleIndex = 0;
-             ruleIndex < soundChanges.length;
-             ruleIndex++) {
-            const rule = soundChanges[ruleIndex];
+        if (memo.has(position)) {
+            return memo.get(position);
+        }
 
-            if (rule.from === rule.to) {
-                continue;
-            }
-               
-            if (usedRules.has(ruleIndex)) {
-                continue;
-            }
+        const candidates = new Set();
 
-            if (rule.to === "") {
-                if (rule.position === "initial") {
-                    const reversed =
-                        rule.from + candidate;
-                    if (!results.has(reversed)) {
-                        const newUsedRules =
-                            new Set(usedRules);
-                        newUsedRules.add(ruleIndex);
-                        queue.push({
-                            word: reversed,
-                            usedRules: newUsedRules
-                        });
+        for (let end = position + 1; end <= text.length; end++) {
+            const part = text.slice(position, end);
+
+            const reverseParts = new Set([part]);
+
+            for (const rule of soundChanges) {
+                if (rule.from === rule.to) {
+                    continue;
+                }
+
+                if (rule.to === "" && rule.position === "initial") {
+                    if (position === 0) {
+                        reverseParts.add(rule.from + part);
                     }
+                    continue;
                 }
-                continue;
+
+                if (rule.to === "") {
+                    continue;
+                }
+
+                if (rule.to === part) {
+                    reverseParts.add(rule.from);
+                }
             }
 
-            let index =
-                candidate.indexOf(rule.to);
-            while (index !== -1) {
-                const reversed =
-                    candidate.slice(0, index) +
-                    rule.from +
-                    candidate.slice(
-                        index + rule.to.length
-                    );
-                if (!results.has(reversed)) {
-                    const newUsedRules =
-                        new Set(usedRules);
-                    newUsedRules.add(ruleIndex);
-                    queue.push({
-                        word: reversed,
-                        usedRules: newUsedRules
-                    });
+            const restCandidates = solve(end);
+
+            for (const reversePart of reverseParts) {
+                for (const rest of restCandidates) {
+                    candidates.add(reversePart + rest);
                 }
-                index =
-                    candidate.indexOf(
-                        rule.to,
-                        index + rule.to.length
-                    );
             }
         }
+
+        memo.set(position, [...candidates]);
+        return memo.get(position);
     }
-    return [...results];
+
+    return solve(0);
 }
 
 function generateCandidates() {
-    const input =
-        document
-            .getElementById("modernInput")
-            .value
-            .trim();
-    const result =
-        document.getElementById("result");
+    const input = document.getElementById("modernInput").value.trim();
+    const result = document.getElementById("result");
+
     if (!input) {
-        result.textContent =
-            "現代音を入力してください";
+        result.textContent = "現代音を入力してください";
         return;
     }
-    const candidates =
-        applyReverseChanges(input);
 
-    const filtered =
-        candidates.filter(
-            candidate => candidate !== input
-        );
+    const candidates = getReverseCandidates(input)
+        .filter(candidate => candidate !== input);
 
-    const unique =
-        [...new Set(filtered)];
-
-    if (unique.length === 0) {
-        result.textContent =
-            "候補が見つかりませんでした";
+    if (candidates.length === 0) {
+        result.textContent = "候補が見つかりませんでした";
         return;
     }
-    result.innerHTML =
-        unique
-            .map(
-                candidate =>
-                    `<span class="candidate">/${candidate}/</span>`
-            )
-            .join(" ");
+
+    result.innerHTML = candidates
+        .map(candidate =>
+            `<span class="candidate">/${candidate}/</span>`
+        )
+        .join(" ");
+
+    result.innerHTML +=
+        `<div style="margin-top:15px;font-size:14px;">
+            ${candidates.length} 件
+        </div>`;
 }
 </script>
 </body>
