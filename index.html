@@ -1,539 +1,672 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>[夆] 補助ツール</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[夆] 補助ツール</title>
 
-<style>
-    body {
-        font-family: sans-serif;
-        max-width: 800px;
-        margin: 40px auto;
-        padding: 0 20px;
-        line-height: 1.6;
-    }
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+            line-height: 1.6;
+        }
 
-    h1 {
-        font-size: 24px;
-    }
+        h1 {
+            font-size: 24px;
+        }
 
-    textarea {
-        width: 100%;
-        box-sizing: border-box;
-        font-size: 20px;
-        padding: 10px;
-        resize: vertical;
-    }
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 20px;
+            padding: 10px;
+            resize: vertical;
+        }
 
-    button {
-        margin-top: 10px;
-        padding: 8px 20px;
-        font-size: 16px;
-        cursor: pointer;
-    }
+        button {
+            margin-top: 10px;
+            padding: 8px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
 
-    #result {
-        margin-top: 20px;
-        padding: 15px;
-        border: 1px solid #ccc;
-        min-height: 50px;
-        font-size: 20px;
-        word-break: break-word;
-    }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            min-height: 50px;
+            font-size: 20px;
+            word-break: break-word;
+        }
 
-    .candidate {
-        display: inline-block;
-        margin: 4px;
-        padding: 4px 8px;
-        background: #f0f0f0;
-        border-radius: 4px;
-    }
-</style>
+        .candidate {
+            display: inline-block;
+            margin: 4px;
+            padding: 4px 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+    </style>
 </head>
 
 <body>
-<h1>夆語 中古音の確認用</h1>
-<p>現代音を入力してください。</p>
-<textarea id="modernInput" rows="2" placeholder="例：wan"></textarea>
-<button onclick="generateCandidates()">候補を生成</button>
-<h2>結果</h2>
-<div id="result"></div>
-  
-<script>
-const soundChanges = [
-    { from: "a",  to: "a" },
-    { from: "e", to: "ye" },
-    { from: "i",  to: "i" },
-    { from: "o", to: "wo" },
-    { from: "u",  to: "o" },
-    { from: "ä", to: "ya" },
-    { from: "â",  to: "wa" },
-    { from: "ja",  to: "ye" },
-    { from: "je", to: "i" },
-    { from: "jo", to: "ü" },
-    { from: "ju",  to: "ü" },
-    { from: "jä", to: "ya" },
-    { from: "jâ",  to: "wya" },
-    { from: "wa",  to: "wo" },
-    { from: "we", to: "wya" },
-    { from: "wi",  to: "wey" },
-    { from: "wo", to: "wa" },
-    { from: "wä", to: "wya" },
-    { from: "wâ",  to: "wo" },
-    { from: "aj",  to: "ey" },
-    { from: "ej", to: "i" },
-    { from: "ij",  to: "i" },
-    { from: "oj", to: "wey" },
-    { from: "uj",  to: "oy" },
-    { from: "äj", to: "ey" },
-    { from: "âj",  to: "way" },
-    { from: "aw",  to: "aw" },
-    { from: "ew", to: "yaw" },
-    { from: "iw", to: "ü" },
-    { from: "ow", to: "u" },
-    { from: "uw",  to: "ow" },
-    { from: "äw", to: "yaw" },
-    { from: "âw",  to: "aw" },
+    <h1>夆語 中古音の確認用</h1>
+    <p>現代音を入力してください。</p>
+    <textarea id="modernInput" rows="2" placeholder="例：wan"></textarea>
+    <button onclick="generateCandidates()">候補を生成</button>
+    <h2>結果</h2>
+    <div id="result"></div>
+    <span>------------------------------------------</span>
+    <h1>縫語 現代音候補生成</h1>
+    <p>中古音を入力してください。</p>
+    <textarea id="middleInput" rows="2" placeholder="例：wan"></textarea>
+    <button onclick="generateModernCandidates()">候補を生成</button>
+    <h2>結果</h2>
+    <div id="modernResult"></div>
 
-    { from: "aa",  to: "a" },
-    { from: "ee", to: "ey" },
-    { from: "ii",  to: "ay" },
-    { from: "oo", to: "wo" },
-    { from: "uu",  to: "ow" },
-    { from: "ää", to: "ya" },
-    { from: "ââ",  to: "wa" },
-    { from: "jaa",  to: "ya" },
-    { from: "jee", to: "ye" },
-    { from: "joo", to: "yow" },
-    { from: "juu",  to: "yow" },
-    { from: "jää", to: "ya" },
-    { from: "jââ",  to: "wyo" },
-    { from: "waa",  to: "wo" },
-    { from: "wee", to: "wey" },
-    { from: "wii",  to: "wey" },
-    { from: "woo", to: "wa" },
-    { from: "wää", to: "wya" },
-    { from: "wââ",  to: "wo" },
-    { from: "aj",  to: "ey" },
-    { from: "eej", to: "ey" },
-    { from: "ooj", to: "way" },
-    { from: "uuj",  to: "way" },
-    { from: "ääj", to: "ey" },
-    { from: "ââj",  to: "way" },
-    { from: "aaw",  to: "aw" },
-    { from: "eew", to: "yaw" },
-    { from: "iiw", to: "yaw" },
-    { from: "oow", to: "ow" },
-    { from: "ääw", to: "yaw" },
-    { from: "ââw",  to: "aw" },
-    
-{ from: "ap", to: "a", position: "final" },
-{ from: "ep", to: "ya", position: "final" },
-{ from: "ip", to: "i", position: "final" },
-{ from: "op", to: "wo", position: "final" },
-{ from: "up", to: "o", position: "final" },
-{ from: "äp", to: "ya", position: "final" },
-{ from: "âp", to: "wo", position: "final" },
-{ from: "aap", to: "a", position: "final" },
-{ from: "eep", to: "ya", position: "final" },
-{ from: "iip", to: "i", position: "final" },
-{ from: "oop", to: "wo", position: "final" },
-{ from: "uup", to: "ow", position: "final" },
-{ from: "ääp", to: "ya", position: "final" },
-{ from: "ââp", to: "wo", position: "final" },
+    <script>
+        const soundChanges = [
+            { from: "a", to: "a" },
+            { from: "e", to: "ye" },
+            { from: "i", to: "i" },
+            { from: "o", to: "wo" },
+            { from: "u", to: "o" },
+            { from: "ä", to: "ya" },
+            { from: "â", to: "wa" },
+            { from: "ja", to: "ye" },
+            { from: "je", to: "i" },
+            { from: "jo", to: "ü" },
+            { from: "ju", to: "ü" },
+            { from: "jä", to: "ya" },
+            { from: "jâ", to: "wya" },
+            { from: "wa", to: "wo" },
+            { from: "we", to: "wya" },
+            { from: "wi", to: "wey" },
+            { from: "wo", to: "wa" },
+            { from: "wä", to: "wya" },
+            { from: "wâ", to: "wo" },
+            { from: "aj", to: "ey" },
+            { from: "ej", to: "i" },
+            { from: "ij", to: "i" },
+            { from: "oj", to: "wey" },
+            { from: "uj", to: "oy" },
+            { from: "äj", to: "ey" },
+            { from: "âj", to: "way" },
+            { from: "aw", to: "aw" },
+            { from: "ew", to: "yaw" },
+            { from: "iw", to: "ü" },
+            { from: "ow", to: "u" },
+            { from: "uw", to: "ow" },
+            { from: "äw", to: "yaw" },
+            { from: "âw", to: "aw" },
 
-    { from: "at",  to: "a", position: "final" },
-    { from: "et", to: "ya", position: "final" },
-    { from: "it",  to: "i", position: "final" },
-    { from: "ot", to: "wo", position: "final" },
-    { from: "ut", to: "ü", position: "final" },
-    { from: "ät", to: "ya", position: "final" },
-    { from: "ât",  to: "wa", position: "final" },
-    { from: "aat",  to: "a", position: "final" },
-    { from: "eet", to: "ey", position: "final" },
-    { from: "iit",  to: "ey", position: "final" },
-    { from: "oot", to: "wo", position: "final" },
-    { from: "uut", to: "ow", position: "final" },
-    { from: "äät", to: "ya", position: "final" },
-    { from: "âât",  to: "wa", position: "final" },
-    
-    { from: "ak",  to: "e", position: "final" },
-    { from: "ek", to: "yaw", position: "final" },
-    { from: "ik",  to: "i", position: "final" },
-    { from: "ok", to: "wo", position: "final" },
-    { from: "uk", to: "ow", position: "final" },
-    { from: "äk", to: "ye", position: "final" },
-    { from: "âk",  to: "wa", position: "final" },
-    { from: "aak",  to: "aw", position: "final" },
-    { from: "eek", to: "yaw", position: "final" },
-    { from: "iik",  to: "ey", position: "final" },
-    { from: "ook", to: "wo", position: "final" },
-    { from: "uuk", to: "ow", position: "final" },
-    { from: "ääk", to: "ye", position: "final" },
-    { from: "ââk",  to: "wo", position: "final" },
-    
-    { from: "al",  to: "ay" },
-    { from: "el", to: "ey" },
-    { from: "il",  to: "i" },
-    { from: "ol", to: "ay" },
-    { from: "ul", to: "oy" },
-    { from: "äl¹", to: "ya" },
-    { from: "äl²", to: "ey" },
-    { from: "âl",  to: "way" },
-    { from: "aal",  to: "ay" },
-    { from: "eel", to: "ey" },
-    { from: "iil",  to: "ay" },
-    { from: "ool", to: "oy" },
-    { from: "uul", to: "way" },
-    { from: "ääl¹", to: "ye" },
-    { from: "ääl²", to: "ey" },
-    { from: "ââl",  to: "way" },
-    
-    { from: "am",  to: "an", position: "final" },
-    { from: "em", to: "yan", position: "final" },
-    { from: "im",  to: "in", position: "final" },
-    { from: "om", to: "wong", position: "final" },
-    { from: "um", to: "ong", position: "final" },
-    { from: "äm", to: "yan", position: "final" },
-    { from: "âm",  to: "wang", position: "final" },
-    { from: "aam",  to: "an", position: "final" },
-    { from: "eem", to: "in", position: "final" },
-    { from: "iim",  to: "in", position: "final" },
-    { from: "oom", to: "wong", position: "final" },
-    { from: "uum", to: "ong", position: "final" },
-    { from: "ääm", to: "yan", position: "final" },
-    { from: "ââm",  to: "wang", position: "final" },
+            { from: "aa", to: "a" },
+            { from: "ee", to: "ey" },
+            { from: "ii", to: "ay" },
+            { from: "oo", to: "wo" },
+            { from: "uu", to: "ow" },
+            { from: "ää", to: "ya" },
+            { from: "ââ", to: "wa" },
+            { from: "jaa", to: "ya" },
+            { from: "jee", to: "ye" },
+            { from: "joo", to: "yow" },
+            { from: "juu", to: "yow" },
+            { from: "jää", to: "ya" },
+            { from: "jââ", to: "wyo" },
+            { from: "waa", to: "wo" },
+            { from: "wee", to: "wey" },
+            { from: "wii", to: "wey" },
+            { from: "woo", to: "wa" },
+            { from: "wää", to: "wya" },
+            { from: "wââ", to: "wo" },
+            { from: "aj", to: "ey" },
+            { from: "eej", to: "ey" },
+            { from: "ooj", to: "way" },
+            { from: "uuj", to: "way" },
+            { from: "ääj", to: "ey" },
+            { from: "ââj", to: "way" },
+            { from: "aaw", to: "aw" },
+            { from: "eew", to: "yaw" },
+            { from: "iiw", to: "yaw" },
+            { from: "oow", to: "ow" },
+            { from: "ääw", to: "yaw" },
+            { from: "ââw", to: "aw" },
 
-    { from: "wem", to: "wyan", position: "final" },
-    { from: "weem", to: "wyan", position: "final" },
-    { from: "wäm", to: "wyan", position: "final" },
-    { from: "wääm", to: "wyan", position: "final" },
-    { from: "jâm", to: "wyang", position: "final" },
-    { from: "jââm", to: "wyang", position: "final" },
+            { from: "ap", to: "a", position: "final" },
+            { from: "ep", to: "ya", position: "final" },
+            { from: "ip", to: "i", position: "final" },
+            { from: "op", to: "wo", position: "final" },
+            { from: "up", to: "o", position: "final" },
+            { from: "äp", to: "ya", position: "final" },
+            { from: "âp", to: "wo", position: "final" },
+            { from: "aap", to: "a", position: "final" },
+            { from: "eep", to: "ya", position: "final" },
+            { from: "iip", to: "i", position: "final" },
+            { from: "oop", to: "wo", position: "final" },
+            { from: "uup", to: "ow", position: "final" },
+            { from: "ääp", to: "ya", position: "final" },
+            { from: "ââp", to: "wo", position: "final" },
 
-    { from: "an",  to: "an", position: "final" },
-    { from: "en", to: "yan", position: "final" },
-    { from: "in",  to: "in", position: "final" },
-    { from: "on", to: "won", position: "final" },
-    { from: "un", to: "ün", position: "final" },
-    { from: "än", to: "yan", position: "final" },
-    { from: "ân", to: "wan", position: "final" },
-    { from: "aan",  to: "an", position: "final" },
-    { from: "een", to: "in", position: "final" },
-    { from: "iin",  to: "in", position: "final" },
-    { from: "oon", to: "won", position: "final" },
-    { from: "uun", to: "won", position: "final" },
-    { from: "ään", to: "yan", position: "final" },
-    { from: "âân", to: "wan", position: "final" },
-    { from: "wen", to: "wyan", position: "final" },
-    { from: "ween", to: "wyan", position: "final" },
-    { from: "wän", to: "wyan", position: "final" },
-    { from: "wään", to: "wyan", position: "final" },
-    { from: "jân", to: "wyan", position: "final" },
-    { from: "jâân", to: "wyan", position: "final" },
-    
-    { from: "ang", to: "ang", position: "final" },
-    { from: "eng", to: "ing", position: "final" },
-    { from: "ing", to: "ing", position: "final" },
-    { from: "ong¹", to: "ong", position: "final" },
-    { from: "ong²", to: "eng", position: "final" },
-    { from: "ung", to: "ong", position: "final" },
-    { from: "äng", to: "yang", position: "final" },
-    { from: "âng", to: "wang", position: "final" },
-    
-    { from: "aang", to: "ang", position: "final" },
-    { from: "eeng", to: "eng", position: "final" },
-    { from: "iing", to: "ey", position: "final" },
-    { from: "oong", to: "wong", position: "final" },
-    { from: "uung", to: "wong", position: "final" },
-    { from: "ääng", to: "yang", position: "final" },
-    { from: "ââng", to: "wang", position: "final" },
-    { from: "wäng", to: "wyang", position: "final" },
-    { from: "wääng", to: "wyang", position: "final" },
-    
-    { from: "p", to: "b", position: "initial" },
-    { from: "b", to: "b" },
-    { from: "ph", to: "p" },
-    { from: "t", to: "d" },
-    { from: "d", to: "d" },
-    { from: "th", to: "t" },
-    { from: "k", to: "g", position: "initial" },
-    { from: "g", to: "g", position: "initial" },
-    { from: "kh", to: "k" },
-    { from: "mp¹", to: "b", position: "initial" },
-    { from: "mp²", to: "m", position: "initial" },
-    { from: "mb¹", to: "b", position: "initial" },
-    { from: "mb²", to: "m", position: "initial" },
-    { from: "mph¹", to: "b", position: "initial" },
-    { from: "mph²", to: "f", position: "initial" },
-    { from: "nt¹", to: "d", position: "initial" },
-    { from: "nt²", to: "n", position: "initial" },
-    { from: "nd¹", to: "d", position: "initial" },
-    { from: "nd²", to: "n", position: "initial" },
-    { from: "nth¹", to: "d", position: "initial" },
-    { from: "nth²", to: "s", position: "initial" },
-    { from: "ngk", to: "g", position: "initial" },
-    { from: "ngg", to: "g", position: "initial" },
-    { from: "ngkh", to: "g", position: "initial" },
-    
-    { from: "s", to: "s" },
-    { from: "s", to: "", position: "final" },
-    { from: "z", to: "s" },
-    { from: "z", to: "", position: "final" },
-    { from: "h", to: "", position: "initial"},
-    { from: "h", to: "", position: "final" },
-    { from: "ts", to: "z" },
-    { from: "dz", to: "z" },
-    { from: "tsh", to: "c" },
-    { from: "m", to: "m", position: "initial" },
-    { from: "n", to: "n", position: "initial" },
-    { from: "ng", to: "n", position: "initial" },
-    { from: "hm", to: "f", position: "initial" },
-    { from: "hn", to: "s", position: "initial" },
-    { from: "hng", to: "h", position: "initial" },
-    { from: "l", to: "l" },
-    { from: "hl", to: "s" },
-    { from: "r", to: "y", position: "initial" },
-    { from: "j", to: "y", position: "initial" },
-    { from: "w", to: "w", position: "initial"},
-    { from: "pj", to: "by" },
-    { from: "bj", to: "by" },
-    { from: "phj", to: "py" },
-    { from: "tj", to: "dy" },
-    { from: "dj", to: "dy" },
-    { from: "thj", to: "ty" },
-    { from: "kj", to: "zy" },
-    { from: "gj", to: "zy" },
-    { from: "khj", to: "cy" },
-    { from: "mpj¹", to: "by", position: "initial" },
-    { from: "mpj²", to: "my", position: "initial" },
-    { from: "mbj¹", to: "by", position: "initial" },
-    { from: "mbj²", to: "my", position: "initial" },
-    { from: "mphj", to: "by", position: "initial" },
-    { from: "ntj¹", to: "dy", position: "initial" },
-    { from: "ntj²", to: "ny", position: "initial" },
-    { from: "ndj¹", to: "dy", position: "initial" },
-    { from: "ndj²", to: "ny", position: "initial" },
-    { from: "nthj¹", to: "dy", position: "initial" },
-    { from: "nthj²", to: "ny", position: "initial" },
-    { from: "ngkj¹", to: "zy", position: "initial" },
-    { from: "ngkj²", to: "ny", position: "initial" },
-    { from: "nggj¹", to: "zy", position: "initial" },
-    { from: "nggj²", to: "ny", position: "initial" },
-    { from: "ngkhj¹", to: "zy", position: "initial" },
-    { from: "ngkhj²", to: "ny", position: "initial" },
-    
-    { from: "sj", to: "sy" },
-    { from: "zj", to: "sy" },
-    { from: "hj", to: "sy" },
-    { from: "tsj", to: "zy" },
-    { from: "dzj", to: "zy" },
-    { from: "tshj", to: "cy" },
-    { from: "mj", to: "my" },
-    { from: "nj", to: "ny" },
-    { from: "ngj", to: "nh" },
-    { from: "hmj", to: "py", position: "initial" },
-    { from: "hn", to: "sy", position: "initial" },
-    { from: "hng", to: "sy", position: "initial" },
-    { from: "lj", to: "ly" },
-    { from: "lhj", to: "sy", position: "initial" }, 
-    { from: "rj", to: "y", position: "initial" },
-    { from: "pw", to: "bw" },
-    { from: "bw", to: "bw" },
-    { from: "phw", to: "pw" },
-    { from: "tw", to: "dw" },
-    { from: "dw", to: "du" },
-    { from: "thw", to: "tw" },
-    { from: "kw", to: "gw" },
-    { from: "gw", to: "gu" },
-    { from: "khw", to: "kw" },
+            { from: "at", to: "a", position: "final" },
+            { from: "et", to: "ya", position: "final" },
+            { from: "it", to: "i", position: "final" },
+            { from: "ot", to: "wo", position: "final" },
+            { from: "ut", to: "ü", position: "final" },
+            { from: "ät", to: "ya", position: "final" },
+            { from: "ât", to: "wa", position: "final" },
+            { from: "aat", to: "a", position: "final" },
+            { from: "eet", to: "ey", position: "final" },
+            { from: "iit", to: "ey", position: "final" },
+            { from: "oot", to: "wo", position: "final" },
+            { from: "uut", to: "ow", position: "final" },
+            { from: "äät", to: "ya", position: "final" },
+            { from: "âât", to: "wa", position: "final" },
 
-    { from: "mpw¹", to: "bw", position: "initial" },
-    { from: "mpw²", to: "w", position: "initial" },
-    { from: "mbw¹", to: "bw", position: "initial" },
-    { from: "mbw²", to: "w", position: "initial" },
-    { from: "mphw", to: "by", position: "initial" },
-    { from: "ntw¹", to: "dw", position: "initial" },
-    { from: "ntj²", to: "nw", position: "initial" },
-    { from: "ndw¹", to: "dw", position: "initial" },
-    { from: "ndj²", to: "nw", position: "initial" },
-    { from: "nthw", to: "dw", position: "initial" },
-    { from: "ngkw", to: "gw", position: "initial" },
-    { from: "nggw¹", to: "gy", position: "initial" },
-    { from: "nggw²", to: "w", position: "initial" },
-    { from: "ngkhw¹", to: "gw", position: "initial" },
-    { from: "ngkhw²", to: "f", position: "initial" },
-    
-    { from: "sw", to: "sw" },
-    { from: "zw", to: "sw" },
-    { from: "hw", to: "f" },
-    { from: "tsw", to: "zw" },
-    { from: "dzw", to: "zw" },
-    { from: "tshw", to: "cw" },
-    { from: "mw", to: "w", position: "initial" },
-    { from: "nw", to: "nw" },
-    { from: "ŋw", to: "w", position: "initial" },
-    { from: "hmw", to: "f", position: "initial" },
-    { from: "hnw", to: "sh" },
-    { from: "hngw", to: "f", position: "initial" },
-    { from: "lw", to: "lw" },
-    { from: "hlw", to: "sh" },
-    { from: "rw", to: "w", position: "initial" },
-    
-    { from: "pr", to: "by" },
-    { from: "br", to: "by" },
-    { from: "phr", to: "py" },
-    { from: "tr", to: "zh" },
-    { from: "dr", to: "zh" },
-    { from: "thr", to: "ch" },
-    { from: "kr", to: "zy" },
-    { from: "gr", to: "zy" },
-    { from: "khr", to: "cy" },
-    { from: "mpr¹", to: "by" },
-    { from: "mpr²", to: "my" },
-    { from: "mbr¹", to: "by" },
-    { from: "mnr²", to: "my" },
-    { from: "mphr", to: "by" },
-    { from: "ntr", to: "zh" },
-    { from: "ndr", to: "zh" },
-    { from: "nthr", to: "zh" },
-    { from: "ngkr", to: "zy" },
-    { from: "nggr", to: "zy" },
-    { from: "ngkhr", to: "zy" },
-    { from: "sr", to: "sh" },
-    { from: "zr", to: "sh" },
-    { from: "hr", to: "sy" },
-    { from: "tsr", to: "zh" },
-    { from: "dzr", to: "zh" },
-    { from: "tshr", to: "ch" },
-    { from: "mr", to: "my" },
-    { from: "nr", to: "nh" },
-    { from: "ngr", to: "nh" },
-    { from: "hmr", to: "sy" },
-    { from: "hnr", to: "sh" },
-    { from: "hngr", to: "sh" },
-    { from: "prw", to: "bwy" },
-    { from: "brw", to: "bwy" },
-    { from: "phw", to: "pwy" },
-    { from: "trw", to: "zhwy" },
-    { from: "drw", to: "zhwy" },
-    { from: "thrw", to: "chwy" },
-    { from: "krw", to: "zhwy" },
-    { from: "grw", to: "zhwy" },
-    { from: "khrw", to: "chwy" },
-    { from: "srw", to: "shwy" },
-    { from: "zrw", to: "shwy" },
-    { from: "hrw", to: "swy" },
-    { from: "tsrw", to: "zhwy" },
-    { from: "dzrw", to: "zhwy" },
-    { from: "tshrw", to: "chwy" },
-    { from: "mrw", to: "wy" },
-    { from: "nrw", to: "nwy" },
-    { from: "ngrw", to: "nhwy" },
-    { from: "hmrw", to: "shw" },
-    { from: "hnrw", to: "shw" },
-    { from: "hngrw", to: "shw" }
-];
+            { from: "ak", to: "e", position: "final" },
+            { from: "ek", to: "yaw", position: "final" },
+            { from: "ik", to: "i", position: "final" },
+            { from: "ok", to: "wo", position: "final" },
+            { from: "uk", to: "ow", position: "final" },
+            { from: "äk", to: "ye", position: "final" },
+            { from: "âk", to: "wa", position: "final" },
+            { from: "aak", to: "aw", position: "final" },
+            { from: "eek", to: "yaw", position: "final" },
+            { from: "iik", to: "ey", position: "final" },
+            { from: "ook", to: "wo", position: "final" },
+            { from: "uuk", to: "ow", position: "final" },
+            { from: "ääk", to: "ye", position: "final" },
+            { from: "ââk", to: "wo", position: "final" },
 
-function getReverseCandidates(text) {
-    const memo = new Map();
+            { from: "al", to: "ay" },
+            { from: "el", to: "ey" },
+            { from: "il", to: "i" },
+            { from: "ol", to: "ay" },
+            { from: "ul", to: "oy" },
+            { from: "äl¹", to: "ya" },
+            { from: "äl²", to: "ey" },
+            { from: "âl", to: "way" },
+            { from: "aal", to: "ay" },
+            { from: "eel", to: "ey" },
+            { from: "iil", to: "ay" },
+            { from: "ool", to: "oy" },
+            { from: "uul", to: "way" },
+            { from: "ääl¹", to: "ye" },
+            { from: "ääl²", to: "ey" },
+            { from: "ââl", to: "way" },
 
-    function solve(position) {
-        if (position === text.length) {
-            return [""];
-        }
+            { from: "am", to: "an", position: "final" },
+            { from: "em", to: "yan", position: "final" },
+            { from: "im", to: "in", position: "final" },
+            { from: "om", to: "wong", position: "final" },
+            { from: "um", to: "ong", position: "final" },
+            { from: "äm", to: "yan", position: "final" },
+            { from: "âm", to: "wang", position: "final" },
+            { from: "aam", to: "an", position: "final" },
+            { from: "eem", to: "in", position: "final" },
+            { from: "iim", to: "in", position: "final" },
+            { from: "oom", to: "wong", position: "final" },
+            { from: "uum", to: "ong", position: "final" },
+            { from: "ääm", to: "yan", position: "final" },
+            { from: "ââm", to: "wang", position: "final" },
 
-        if (memo.has(position)) {
-            return memo.get(position);
-        }
+            { from: "wem", to: "wyan", position: "final" },
+            { from: "weem", to: "wyan", position: "final" },
+            { from: "wäm", to: "wyan", position: "final" },
+            { from: "wääm", to: "wyan", position: "final" },
+            { from: "jâm", to: "wyang", position: "final" },
+            { from: "jââm", to: "wyang", position: "final" },
 
-        const candidates = new Set();
+            { from: "an", to: "an", position: "final" },
+            { from: "en", to: "yan", position: "final" },
+            { from: "in", to: "in", position: "final" },
+            { from: "on", to: "won", position: "final" },
+            { from: "un", to: "ün", position: "final" },
+            { from: "än", to: "yan", position: "final" },
+            { from: "ân", to: "wan", position: "final" },
+            { from: "aan", to: "an", position: "final" },
+            { from: "een", to: "in", position: "final" },
+            { from: "iin", to: "in", position: "final" },
+            { from: "oon", to: "won", position: "final" },
+            { from: "uun", to: "won", position: "final" },
+            { from: "ään", to: "yan", position: "final" },
+            { from: "âân", to: "wan", position: "final" },
+            { from: "wen", to: "wyan", position: "final" },
+            { from: "ween", to: "wyan", position: "final" },
+            { from: "wän", to: "wyan", position: "final" },
+            { from: "wään", to: "wyan", position: "final" },
+            { from: "jân", to: "wyan", position: "final" },
+            { from: "jâân", to: "wyan", position: "final" },
 
-        for (let end = position + 1; end <= text.length; end++) {
-            const part = text.slice(position, end);
-            const reverseParts = new Set();
+            { from: "ar", to: "an", positior: "final" },
+            { from: "er", to: "yan", positior: "final" },
+            { from: "ir", to: "in", positior: "final" },
+            { from: "or", to: "won", positior: "final" },
+            { from: "ur", to: "ün", positior: "final" },
+            { from: "är", to: "yan", positior: "final" },
+            { from: "aar", to: "an", positior: "final" },
+            { from: "eer", to: "in", positior: "final" },
+            { from: "iir", to: "in", positior: "final" },
+            { from: "oor", to: "won", positior: "final" },
+            { from: "uur", to: "won", positior: "final" },
+            { from: "äär", to: "yan", positior: "final" },
+            { from: "ââr", to: "wan", positior: "final" },
+            { from: "wer", to: "wyan", positior: "final" },
+            { from: "weer", to: "wyan", positior: "final" },
+            { from: "wär", to: "wyan", positior: "final" },
+            { from: "wäär", to: "wyan", positior: "final" },
+            { from: "jâr", to: "wyan", positior: "final" },
+            { from: "jââr", to: "wyan", positior: "final" },
 
-            for (const rule of soundChanges) {
-                if (rule.to === "") {
-                    if (rule.position === "initial") {
-                        if (position === 0 && /^[aeiou]/.test(part)) {
-                            reverseParts.add(rule.from + part);
+            { from: "ang", to: "ang", position: "final" },
+            { from: "eng", to: "ing", position: "final" },
+            { from: "ing", to: "ing", position: "final" },
+            { from: "ong¹", to: "ong", position: "final" },
+            { from: "ong²", to: "eng", position: "final" },
+            { from: "ung", to: "ong", position: "final" },
+            { from: "äng", to: "yang", position: "final" },
+            { from: "âng", to: "wang", position: "final" },
+
+            { from: "aang", to: "ang", position: "final" },
+            { from: "eeng", to: "eng", position: "final" },
+            { from: "iing", to: "ey", position: "final" },
+            { from: "oong", to: "wong", position: "final" },
+            { from: "uung", to: "wong", position: "final" },
+            { from: "ääng", to: "yang", position: "final" },
+            { from: "ââng", to: "wang", position: "final" },
+            { from: "wäng", to: "wyang", position: "final" },
+            { from: "wääng", to: "wyang", position: "final" },
+
+            { from: "p", to: "b", position: "initial" },
+            { from: "b", to: "b" },
+            { from: "ph", to: "p" },
+            { from: "t", to: "d" },
+            { from: "d", to: "d" },
+            { from: "th", to: "t" },
+            { from: "k", to: "g", position: "initial" },
+            { from: "g", to: "g", position: "initial" },
+            { from: "kh", to: "k" },
+            { from: "mp¹", to: "b", position: "initial" },
+            { from: "mp²", to: "m", position: "initial" },
+            { from: "mb¹", to: "b", position: "initial" },
+            { from: "mb²", to: "m", position: "initial" },
+            { from: "mph¹", to: "b", position: "initial" },
+            { from: "mph²", to: "f", position: "initial" },
+            { from: "nt¹", to: "d", position: "initial" },
+            { from: "nt²", to: "n", position: "initial" },
+            { from: "nd¹", to: "d", position: "initial" },
+            { from: "nd²", to: "n", position: "initial" },
+            { from: "nth¹", to: "d", position: "initial" },
+            { from: "nth²", to: "s", position: "initial" },
+            { from: "ngk", to: "g", position: "initial" },
+            { from: "ngg", to: "g", position: "initial" },
+            { from: "ngkh", to: "g", position: "initial" },
+
+            { from: "s", to: "s" },
+            { from: "s", to: "", position: "final" },
+            { from: "z", to: "s" },
+            { from: "z", to: "", position: "final" },
+            { from: "h", to: "", position: "initial" },
+            { from: "h", to: "", position: "final" },
+            { from: "ts", to: "z" },
+            { from: "dz", to: "z" },
+            { from: "tsh", to: "c" },
+            { from: "m", to: "m", position: "initial" },
+            { from: "n", to: "n", position: "initial" },
+            { from: "ng", to: "n", position: "initial" },
+            { from: "hm", to: "f", position: "initial" },
+            { from: "hn", to: "s", position: "initial" },
+            { from: "hng", to: "h", position: "initial" },
+            { from: "l", to: "l" },
+            { from: "hl", to: "s" },
+            { from: "r", to: "y", position: "initial" },
+            { from: "j", to: "y", position: "initial" },
+            { from: "w", to: "w", position: "initial" },
+            { from: "pj", to: "by" },
+            { from: "bj", to: "by" },
+            { from: "phj", to: "py" },
+            { from: "tj", to: "dy" },
+            { from: "dj", to: "dy" },
+            { from: "thj", to: "ty" },
+            { from: "kj", to: "zy" },
+            { from: "gj", to: "zy" },
+            { from: "khj", to: "cy" },
+            { from: "mpj¹", to: "by", position: "initial" },
+            { from: "mpj²", to: "my", position: "initial" },
+            { from: "mbj¹", to: "by", position: "initial" },
+            { from: "mbj²", to: "my", position: "initial" },
+            { from: "mphj", to: "by", position: "initial" },
+            { from: "ntj¹", to: "dy", position: "initial" },
+            { from: "ntj²", to: "ny", position: "initial" },
+            { from: "ndj¹", to: "dy", position: "initial" },
+            { from: "ndj²", to: "ny", position: "initial" },
+            { from: "nthj¹", to: "dy", position: "initial" },
+            { from: "nthj²", to: "ny", position: "initial" },
+            { from: "ngkj¹", to: "zy", position: "initial" },
+            { from: "ngkj²", to: "ny", position: "initial" },
+            { from: "nggj¹", to: "zy", position: "initial" },
+            { from: "nggj²", to: "ny", position: "initial" },
+            { from: "ngkhj¹", to: "zy", position: "initial" },
+            { from: "ngkhj²", to: "ny", position: "initial" },
+
+            { from: "sj", to: "sy" },
+            { from: "zj", to: "sy" },
+            { from: "hj", to: "sy" },
+            { from: "tsj", to: "zy" },
+            { from: "dzj", to: "zy" },
+            { from: "tshj", to: "cy" },
+            { from: "mj", to: "my" },
+            { from: "nj", to: "ny" },
+            { from: "ngj", to: "nh" },
+            { from: "hmj", to: "py", position: "initial" },
+            { from: "hn", to: "sy", position: "initial" },
+            { from: "hng", to: "sy", position: "initial" },
+            { from: "lj", to: "ly" },
+            { from: "lhj", to: "sy", position: "initial" },
+            { from: "rj", to: "y", position: "initial" },
+            { from: "pw", to: "bw" },
+            { from: "bw", to: "v" },
+            { from: "phw", to: "pw" },
+            { from: "tw", to: "dw" },
+            { from: "dw", to: "du" },
+            { from: "thw", to: "tw" },
+            { from: "kw", to: "gw" },
+            { from: "gw", to: "gu" },
+            { from: "khw", to: "kw" },
+
+            { from: "mpw¹", to: "v", position: "initial" },
+            { from: "mpw²", to: "w", position: "initial" },
+            { from: "mbw¹", to: "v", position: "initial" },
+            { from: "mbw²", to: "w", position: "initial" },
+            { from: "mphw", to: "by", position: "initial" },
+            { from: "ntw¹", to: "dw", position: "initial" },
+            { from: "ntj²", to: "nw", position: "initial" },
+            { from: "ndw¹", to: "dw", position: "initial" },
+            { from: "ndj²", to: "nw", position: "initial" },
+            { from: "nthw", to: "dw", position: "initial" },
+            { from: "ngkw", to: "gw", position: "initial" },
+            { from: "nggw¹", to: "gy", position: "initial" },
+            { from: "nggw²", to: "w", position: "initial" },
+            { from: "ngkhw¹", to: "gw", position: "initial" },
+            { from: "ngkhw²", to: "f", position: "initial" },
+
+            { from: "sw", to: "sw" },
+            { from: "zw", to: "sw" },
+            { from: "hw", to: "f" },
+            { from: "tsw", to: "zw" },
+            { from: "dzw", to: "zw" },
+            { from: "tshw", to: "cw" },
+            { from: "mw", to: "w", position: "initial" },
+            { from: "nw", to: "nw" },
+            { from: "ŋw", to: "w", position: "initial" },
+            { from: "hmw", to: "f", position: "initial" },
+            { from: "hnw", to: "sh" },
+            { from: "hngw", to: "f", position: "initial" },
+            { from: "lw", to: "lw" },
+            { from: "hlw", to: "sh" },
+            { from: "rw", to: "w", position: "initial" },
+
+            { from: "pr", to: "by" },
+            { from: "br", to: "by" },
+            { from: "phr", to: "py" },
+            { from: "tr", to: "zh" },
+            { from: "dr", to: "zh" },
+            { from: "thr", to: "ch" },
+            { from: "kr", to: "zy" },
+            { from: "gr", to: "zy" },
+            { from: "khr", to: "cy" },
+            { from: "mpr¹", to: "by" },
+            { from: "mpr²", to: "my" },
+            { from: "mbr¹", to: "by" },
+            { from: "mnr²", to: "my" },
+            { from: "mphr", to: "by" },
+            { from: "ntr", to: "zh" },
+            { from: "ndr", to: "zh" },
+            { from: "nthr", to: "zh" },
+            { from: "ngkr", to: "zy" },
+            { from: "nggr", to: "zy" },
+            { from: "ngkhr", to: "zy" },
+            { from: "sr", to: "sh" },
+            { from: "zr", to: "sh" },
+            { from: "hr", to: "sy" },
+            { from: "tsr", to: "zh" },
+            { from: "dzr", to: "zh" },
+            { from: "tshr", to: "ch" },
+            { from: "mr", to: "my" },
+            { from: "nr", to: "nh" },
+            { from: "ngr", to: "nh" },
+            { from: "hmr", to: "sy" },
+            { from: "hnr", to: "sh" },
+            { from: "hngr", to: "sh" },
+            { from: "prw", to: "bwy" },
+            { from: "brw", to: "bwy" },
+            { from: "phw", to: "pwy" },
+            { from: "trw", to: "zhwy" },
+            { from: "drw", to: "zhwy" },
+            { from: "thrw", to: "chwy" },
+            { from: "krw", to: "zhwy" },
+            { from: "grw", to: "zhwy" },
+            { from: "khrw", to: "chwy" },
+            { from: "srw", to: "shwy" },
+            { from: "zrw", to: "shwy" },
+            { from: "hrw", to: "swy" },
+            { from: "tsrw", to: "zhwy" },
+            { from: "dzrw", to: "zhwy" },
+            { from: "tshrw", to: "chwy" },
+            { from: "mrw", to: "wy" },
+            { from: "nrw", to: "nwy" },
+            { from: "ngrw", to: "nhwy" },
+            { from: "hmrw", to: "shw" },
+            { from: "hnrw", to: "shw" },
+            { from: "hngrw", to: "shw" }
+        ];
+
+
+
+        function getReverseCandidates(text) {
+            const memo = new Map();
+
+            function solve(position) {
+                if (position === text.length) {
+                    return [""];
+                }
+
+                if (memo.has(position)) {
+                    return memo.get(position);
+                }
+
+                const candidates = new Set();
+
+                for (let end = position + 1; end <= text.length; end++) {
+                    const part = text.slice(position, end);
+                    const reverseParts = new Set();
+
+                    for (const rule of soundChanges) {
+                        if (rule.to === "") {
+                            if (rule.position === "initial") {
+                                if (position === 0 && /^[aeiou]/.test(part)) {
+                                    reverseParts.add(rule.from + part);
+                                }
+                            }
+
+                            if (rule.position === "final") {
+                                if (end === text.length) {
+                                    reverseParts.add(part + rule.from);
+                                }
+                            }
+
+                            continue;
                         }
+
+                        if (rule.to !== part) {
+                            continue;
+                        }
+
+                        if (rule.position === "initial" && position !== 0) {
+                            continue;
+                        }
+
+                        if (rule.position === "final" && end !== text.length) {
+                            continue;
+                        }
+
+                        reverseParts.add(rule.from);
                     }
 
-                    if (rule.position === "final") {
-                        if (end === text.length) {
-                            reverseParts.add(part + rule.from);
-                        }
+                    if (reverseParts.size === 0) {
+                        continue;
                     }
 
-                    continue;
+                    const restCandidates = solve(end);
+
+                    for (const reversePart of reverseParts) {
+                        for (const rest of restCandidates) {
+                            candidates.add(reversePart + rest);
+                        }
+                    }
                 }
 
-                if (rule.to !== part) {
-                    continue;
-                }
-
-                if (rule.position === "initial" && position !== 0) {
-                    continue;
-                }
-
-                if (rule.position === "final" && end !== text.length) {
-                    continue;
-                }
-
-                reverseParts.add(rule.from);
+                memo.set(position, [...candidates]);
+                return memo.get(position);
             }
 
-            if (reverseParts.size === 0) {
-                continue;
-            }
-
-            const restCandidates = solve(end);
-
-            for (const reversePart of reverseParts) {
-                for (const rest of restCandidates) {
-                    candidates.add(reversePart + rest);
-                }
-            }
+            return solve(0);
         }
 
-        memo.set(position, [...candidates]);
-        return memo.get(position);
-    }
+        function generateCandidates() {
+            const input = document.getElementById("modernInput").value.trim();
+            const result = document.getElementById("result");
 
-    return solve(0);
-}
+            if (!input) {
+                result.textContent = "現代音を入力してください";
+                return;
+            }
 
-function generateCandidates() {
-    const input = document.getElementById("modernInput").value.trim();
-    const result = document.getElementById("result");
+            const candidates = getReverseCandidates(input)
+                .filter(candidate => candidate !== input);
 
-    if (!input) {
-        result.textContent = "現代音を入力してください";
-        return;
-    }
+            if (candidates.length === 0) {
+                result.textContent = "候補が見つかりませんでした";
+                return;
+            }
 
-    const candidates = getReverseCandidates(input)
-        .filter(candidate => candidate !== input);
+            result.innerHTML = candidates
+                .map(candidate =>
+                    `<span class="candidate">/${candidate}/</span>`
+                )
+                .join(" ");
 
-    if (candidates.length === 0) {
-        result.textContent = "候補が見つかりませんでした";
-        return;
-    }
-
-    result.innerHTML = candidates
-        .map(candidate =>
-            `<span class="candidate">/${candidate}/</span>`
-        )
-        .join(" ");
-
-    result.innerHTML +=
-        `<div style="margin-top:15px;font-size:14px;">
+            result.innerHTML +=
+                `<div style="margin-top:15px;font-size:14px;">
             ${candidates.length} 件
         </div>`;
-}
-</script>
+        }
+
+        function getForwardCandidates(text) {
+            const memo = new Map();
+
+            function solve(position) {
+                if (position === text.length) {
+                    return [{ text: "", parts: 0 }];
+                }
+
+                if (memo.has(position)) {
+                    return memo.get(position);
+                }
+
+                const candidates = [];
+
+                for (let end = position + 1; end <= text.length; end++) {
+                    const part = text.slice(position, end);
+
+                    for (const rule of soundChanges) {
+                        if (rule.from === "") {
+                            continue;
+                        }
+
+                        if (rule.from !== part) {
+                            continue;
+                        }
+
+                        if (rule.position === "initial" && position !== 0) {
+                            continue;
+                        }
+
+                        if (rule.position === "final" && end !== text.length) {
+                            continue;
+                        }
+
+                        const restCandidates = solve(end);
+
+                        for (const rest of restCandidates) {
+                            candidates.push({
+                                text: rule.to + rest.text,
+                                parts: rest.parts + 1
+                            });
+                        }
+                    }
+                }
+
+                candidates.sort((a, b) => {
+                    if (a.parts !== b.parts) {
+                        return a.parts - b.parts;
+                    }
+
+                    if (a.text.length !== b.text.length) {
+                        return a.text.length - b.text.length;
+                    }
+
+                    return a.text.localeCompare(b.text);
+                });
+
+                const unique = new Map();
+
+                for (const candidate of candidates) {
+                    if (!unique.has(candidate.text)) {
+                        unique.set(candidate.text, candidate);
+                    }
+                }
+
+                const result = [...unique.values()];
+
+                memo.set(position, result);
+                return result;
+            }
+
+            return solve(0).map(candidate => candidate.text);
+        }
+
+        function generateModernCandidates() {
+            const input = document.getElementById("middleInput").value.trim();
+            const result = document.getElementById("modernResult");
+
+            if (!input) {
+                result.textContent = "中古音を入力してください";
+                return;
+            }
+
+            const candidates = getForwardCandidates(input);
+
+            if (candidates.length === 0) {
+                result.textContent = "候補が見つかりませんでした";
+                return;
+            }
+
+            result.innerHTML = candidates
+                .map(candidate =>
+                    `<span class="candidate">/${candidate}/</span>`
+                )
+                .join(" ");
+
+            result.innerHTML +=
+                `<div style="margin-top:15px;font-size:14px;">
+            ${candidates.length} 件
+        </div>`;
+        }
+    </script>
 </body>
+
 </html>
